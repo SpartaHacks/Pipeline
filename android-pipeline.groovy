@@ -14,7 +14,8 @@ def jenkinsBuild() {
     
             stage('assemble') {
                 if(env.BRANCH_NAME == 'master') {
-                    sh ".gradle assembleDebug"
+		    // use assembleDebug for now, will change to assembleRelease later
+                    sh "./gradlew assembleDebug"
                 }
                 else {
                     sh "./gradlew assembleDebug"
@@ -22,46 +23,54 @@ def jenkinsBuild() {
             }
     
             stage('archive app') {
-                if(env.BRANCH_NAME == 'master') {
-                    sh "./gradle assembleRelease"
-                }
-                else {
-                    step([$class: 'ArtifactArchiver', artifacts: '**/apk/app-debug.apk', fingerprint: true])
-                }
+                // if(env.BRANCH_NAME == 'master') {
+                //     step([$class: 'ArtifactArchiver', artifacts: '**/apk/app-release.apk', fingerprint: true])
+                // }
+                // else {
+                //     step([$class: 'ArtifactArchiver', artifacts: '**/apk/app-debug.apk', fingerprint: true])
+                // }
+                step([$class: 'ArtifactArchiver', artifacts: '**/apk/app-debug.apk', fingerprint: true])
             }
         } 
         catch (e) {
+            currentBuild.result = "FAILED"
             echo '***Error: Build failed with error ' + e.toString()
             throw e
-	    failure = true
         }
 
         finally {
-	    echo "Cleaning work directory"
+	        echo "Cleaning work directory"
             sh "git clean -xfd"
-	    notifyBuild(currentBuild.result)
+	        notifyBuild(currentBuild.result)
         }
     }
 }
 
-def notifyBuild(failure) {
+def notifyBuild(String buildStatus = 'STARTED') {
+  // build status of null means successful
+  buildStatus =  buildStatus ?: 'SUCCESSFUL'
+
+  // Default values
+  def colorName = 'RED'
+  def colorCode = '#FF0000'
+  def subject = "${buildStatus}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
+  def summary = "${subject} (${env.BUILD_URL})"
+
   // Override default values based on build status
-  if (!failure) {
+  if (buildStatus == 'STARTED') {
+    color = 'YELLOW'
+    colorCode = '#FFFF00'
+  } else if (buildStatus == 'SUCCESSFUL') {
     color = 'GREEN'
     colorCode = '#00FF00'
-    buildStatus = 'SUCCESSFUL'
   } else {
     color = 'RED'
     colorCode = '#FF0000'
-    buildStatus = 'FAILURE'
   }
-
-  def subject = "${buildStatus}: Job '${env.JOB_NAME}'"
-  def summary = "${subject} ${env.BUILD_URL}"
 
   // Send notifications
   slackSend (color: colorCode, message: summary)
-}   
+} 
 
 return this;
 
