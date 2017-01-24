@@ -23,7 +23,7 @@ def jenkinsBuild() {
     
             stage('archive app') {
                 if(env.BRANCH_NAME == 'master') {
-                    sh ".gradle assembleRelease"
+                    sh "./gradle assembleRelease"
                 }
                 else {
                     step([$class: 'ArtifactArchiver', artifacts: '**/apk/app-debug.apk', fingerprint: true])
