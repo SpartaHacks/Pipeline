@@ -14,7 +14,7 @@ def jenkinsBuild() {
     
             stage('assemble') {
                 if(env.BRANCH_NAME == 'master') {
-                    sh ".gradle assembleRelease"
+                    sh ".gradle assembleDebug"
                 }
                 else {
                     sh "./gradlew assembleDebug"
