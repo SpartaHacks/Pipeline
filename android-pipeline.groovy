@@ -33,6 +33,7 @@ def jenkinsBuild() {
         catch (e) {
             echo '***Error: Build failed with error ' + e.toString()
             throw e
+	    failure = true
         }
 
         finally {
@@ -43,27 +44,20 @@ def jenkinsBuild() {
     }
 }
 
-def notifyBuild(String buildStatus = 'STARTED') {
-  // build status of null means successful
-  buildStatus =  buildStatus ?: 'SUCCESSFUL'
-
-  // Default values
-  def colorName = 'RED'
-  def colorCode = '#FF0000'
-  def subject = "${buildStatus}: Job '${env.JOB_NAME}'"
-  def summary = "${subject} ${env.BUILD_URL}"
-
+def notifyBuild(failure) {
   // Override default values based on build status
-  if (buildStatus == 'STARTED') {
-    color = 'YELLOW'
-    colorCode = '#FFFF00'
-  } else if (buildStatus == 'SUCCESSFUL') {
+  if (!failure) {
     color = 'GREEN'
     colorCode = '#00FF00'
+    buildStatus = 'SUCCESSFUL'
   } else {
     color = 'RED'
     colorCode = '#FF0000'
+    buildStatus = 'FAILURE'
   }
+
+  def subject = "${buildStatus}: Job '${env.JOB_NAME}'"
+  def summary = "${subject} ${env.BUILD_URL}"
 
   // Send notifications
   slackSend (color: colorCode, message: summary)
